@@ -26,12 +26,14 @@ let intReducer state cmd =
     | Decrease -> state - 1
 
 let listStore : StateStore<GameStateForList> = 
-    { Read = fun () -> async.Return []
-      Write = fun _ -> async.Zero () }
+    let mutable data : string list = []
+    { Read = fun () -> async.Return data
+      Write = fun x -> async { data <- x }}
 
 let intStore : StateStore<GameStateForInt> = 
-    { Read = fun () -> async.Return 0
-      Write = fun _ -> async.Zero () }
+    let mutable data : int = 0
+    { Read = fun () -> async.Return data
+      Write = fun x -> async { data <- x } }
 
 let listCfg = {
     Store = listStore
@@ -65,6 +67,7 @@ let main argv =
             System.Console.WriteLine ("1> {0}", rsp1)
             let! rsp2 = actor.PostAndAsyncReply (fun ch -> Increase, ch)
             System.Console.WriteLine ("2> {0}", rsp2)
+            
             do! Async.Sleep 3_000
             
             use! actor = actorHost.GetActor actorID

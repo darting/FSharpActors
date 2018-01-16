@@ -5,27 +5,8 @@ module Actors =
 
     open System
     open System.Threading
-    open Microsoft.Extensions.Logging
 
     type ActorID = ActorID of string
-
-    type ActorHostConfiguration = {
-        Logger : ILogger seq
-        CancellationToken : CancellationToken
-        Name : string
-    }
-    with 
-        static member Create (?name, ?loggers, ?cancellationToken) =
-            let proc = Diagnostics.Process.GetCurrentProcess()
-            let processName, processID = proc.ProcessName, proc.Id
-            let defaultHostName = sprintf "%s_%s_%d" Environment.MachineName processName processID
-            let hostName = defaultArg name defaultHostName
-            let ct = defaultArg cancellationToken Async.DefaultCancellationToken
-            { 
-              Name = hostName
-              CancellationToken = ct 
-              Logger = (defaultArg loggers Seq.empty)
-            }
 
     type StateStore<'State> = {
         Read : unit -> Async<'State>
@@ -109,9 +90,8 @@ module Actors =
             worker
         
         let create<'State, 'Action> (actorConfiguration : ActorConfiguration<'State, 'Action>) =
-            let configuration = ActorHostConfiguration.Create ()
             let actorHost = 
-                new MailboxProcessor<ActorHostMessage<'State, 'Action>> ((fun inbox -> 
+                new MailboxProcessor<ActorHostMessage<'State, 'Action>> (fun inbox -> 
                     let rec loop (state : ActorHostState<ActorMessage<'State, 'Action>>) = async {
                         let! message, replyChannel = inbox.Receive()
                         let newState = match message with
@@ -131,7 +111,7 @@ module Actors =
                                             Map.remove actorID state
                         return! loop newState
                     }
-                    loop Map.empty), configuration.CancellationToken)
+                    loop Map.empty)
             actorHost.Start ()
             { new IActorHost<ActorMessage<'State, 'Action>> with
                 member __.GetActor actorID = actorHost.PostAndAsyncReply (fun ch -> Get actorID, Some ch)
