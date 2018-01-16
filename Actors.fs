@@ -26,7 +26,7 @@ module Actors =
             let cts = new CancellationTokenSource ()
             let proc = new MailboxProcessor<'T> (job, cts.Token)
             do
-                proc.Error.Add (fun ex -> Console.WriteLine ex.Message)
+                // proc.Error.Add (fun ex -> Console.WriteLine ex.Message)
                 proc.Start ()
             new Agent<'T>(actorID, proc, cts)
 
@@ -109,8 +109,8 @@ module Actors =
                                             | None -> ()
                                             Map.remove actorID state
                                         | GetState replyChannel ->
-                                            replyChannel.Reply state           
-                                            state                             
+                                            replyChannel.Reply state
+                                            state
                         return! loop newState
                     }
                     loop Map.empty)

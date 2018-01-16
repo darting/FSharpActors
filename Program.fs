@@ -25,12 +25,12 @@ let intReducer state cmd =
     | Increase -> state + 1
     | Decrease -> state - 1
 
-let listStore : StateStore<GameStateForList> = 
+let listStore : Store<GameStateForList> = 
     let mutable data : string list = []
     { Read = fun () -> async.Return data
       Write = fun x -> async { data <- x }}
 
-let intStore : StateStore<GameStateForInt> = 
+let intStore : Store<GameStateForInt> = 
     let mutable data : int = 0
     { Read = fun () -> async.Return data
       Write = fun x -> async { data <- x } }
