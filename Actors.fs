@@ -86,7 +86,6 @@ module Actors =
                                         let! state = store.Read ()
                                         return! loop state
                                     })
-            
             worker
         
         let create<'State, 'Action> (actorConfiguration : ActorConfiguration<'State, 'Action>) =
