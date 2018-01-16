@@ -63,17 +63,17 @@ let main argv =
             let actorID = ActorID "game1"
 
             use! actor = actorHost.GetActor actorID
-            let! rsp1 = actor.PostAndAsyncReply (fun ch -> Increase, ch)
+            let! rsp1 = actor.Ask (fun ch -> Increase, ch)
             System.Console.WriteLine ("1> {0}", rsp1)
-            let! rsp2 = actor.PostAndAsyncReply (fun ch -> Increase, ch)
+            let! rsp2 = actor.Ask (fun ch -> Increase, ch)
             System.Console.WriteLine ("2> {0}", rsp2)
-            
+
             do! Async.Sleep 3_000
             
             use! actor = actorHost.GetActor actorID
-            let! rsp3 = actor.PostAndAsyncReply ((fun ch -> Increase, ch), timeOutInMills)
+            let! rsp3 = actor.Ask ((fun ch -> Increase, ch), timeOutInMills)
             System.Console.WriteLine ("3> {0}", rsp3)
-            let! rsp4 = actor.PostAndAsyncReply (fun ch -> Decrease, ch)
+            let! rsp4 = actor.Ask (fun ch -> Decrease, ch)
             System.Console.WriteLine ("4> {0}", rsp4)
         }
 

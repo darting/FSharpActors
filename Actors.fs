@@ -30,8 +30,8 @@ module Actors =
                 proc.Start ()
             new Agent<'T>(actorID, proc, cts)
 
-        member __.PostAndAsyncReply (buildMessage, ?timeout) = processor.PostAndAsyncReply (buildMessage, ?timeout=timeout)
-        member __.Ask (buildMessage, ?timeout) = processor.PostAndTryAsyncReply (buildMessage, ?timeout=timeout)
+        member __.Ask (buildMessage, ?timeout) = processor.PostAndAsyncReply (buildMessage, ?timeout=timeout)
+        member __.TryAsk (buildMessage, ?timeout) = processor.PostAndTryAsyncReply (buildMessage, ?timeout=timeout)
         member __.Post message = processor.Post message
         member __.ID = actorID
         interface IDisposable with
