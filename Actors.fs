@@ -8,7 +8,7 @@ module Actors =
 
     type ActorID = ActorID of string
 
-    type StateStore<'State> = {
+    type Store<'State> = {
         Read : unit -> Async<'State>
         Write : 'State -> Async<unit>
     }
@@ -16,7 +16,7 @@ module Actors =
     type Reducer<'State, 'Action> = 'State -> 'Action -> 'State
 
     type ActorConfiguration<'State, 'Action> = {
-        Store : StateStore<'State>
+        Store : Store<'State>
         Reducer : Reducer<'State, 'Action>
         TimeOutInMills : int option
     }
@@ -45,17 +45,17 @@ module Actors =
 
         type ActorMessage<'State, 'Action> = 'Action * AsyncReplyChannel<'State>
 
-        type ActorHostState<'T> = Map<string, Agent<'T>>
+        type ActorHostState<'State, 'Action> = Map<string, Agent<ActorMessage<'State, 'Action>>>
 
-        type ActorHostAction =
-            | Get of ActorID
+        type private ActorHostMessage<'State, 'Action> =
+            | Get of ActorID * AsyncReplyChannel<Agent<ActorMessage<'State, 'Action>>>
             | Remove of ActorID
+            | GetState of AsyncReplyChannel<ActorHostState<'State, 'Action>>
 
-        type private ActorHostMessage<'State, 'Action> = ActorHostAction * AsyncReplyChannel<Agent<ActorMessage<'State, 'Action>>> option
-
-        type IActorHost<'T> =
-            abstract GetActor : ActorID -> Async<Agent<'T>>
+        type IActorHost<'State, 'Action> =
+            abstract GetActor : ActorID -> Async<Agent<ActorMessage<'State, 'Action>>>
             abstract RemoveActor : ActorID -> unit
+            abstract GetState : unit -> Async<ActorHostState<'State, 'Action>>
 
         let private workerCreator<'State, 'Action>
                 (configuration : ActorConfiguration<'State, 'Action>)
@@ -80,7 +80,7 @@ module Actors =
                                         | ex -> 
                                             try do! store.Write previousState
                                             with _ -> ()
-                                            actorHost.Post (Remove actorID, None)
+                                            actorHost.Post (Remove actorID)
                                     }
                                     async {
                                         let! state = store.Read ()
@@ -91,30 +91,34 @@ module Actors =
         let create<'State, 'Action> (actorConfiguration : ActorConfiguration<'State, 'Action>) =
             let actorHost = 
                 new MailboxProcessor<ActorHostMessage<'State, 'Action>> (fun inbox -> 
-                    let rec loop (state : ActorHostState<ActorMessage<'State, 'Action>>) = async {
-                        let! message, replyChannel = inbox.Receive()
+                    let rec loop (state : ActorHostState<'State, 'Action>) = async {
+                        let! message = inbox.Receive()
                         let newState = match message with
-                                        | Get (ActorID actorID) ->
+                                        | Get (ActorID actorID, replyChannel) ->
                                             let state', actor = 
                                                 match Map.tryFind actorID state with
                                                 | Some actor -> state, actor
                                                 | None -> 
                                                     let actor = workerCreator actorConfiguration inbox (ActorID actorID)
                                                     Map.add actorID actor state, actor
-                                            replyChannel |> Option.iter (fun ch -> ch.Reply actor)
+                                            replyChannel.Reply actor
                                             state'
                                         | Remove (ActorID actorID) ->
                                             match Map.tryFind actorID state with
                                             | Some actor -> (actor :> IDisposable).Dispose()
                                             | None -> ()
                                             Map.remove actorID state
+                                        | GetState replyChannel ->
+                                            replyChannel.Reply state           
+                                            state                             
                         return! loop newState
                     }
                     loop Map.empty)
             actorHost.Start ()
-            { new IActorHost<ActorMessage<'State, 'Action>> with
-                member __.GetActor actorID = actorHost.PostAndAsyncReply (fun ch -> Get actorID, Some ch)
-                member __.RemoveActor actorID = actorHost.Post (Remove actorID, None) }
+            { new IActorHost<'State, 'Action> with
+                member __.GetActor actorID = actorHost.PostAndAsyncReply (fun ch -> Get (actorID, ch))
+                member __.RemoveActor actorID = actorHost.Post (Remove actorID)
+                member __.GetState () = actorHost.PostAndAsyncReply GetState }
 
 
 

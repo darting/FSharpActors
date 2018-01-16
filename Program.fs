@@ -58,7 +58,7 @@ let main argv =
     let host1 = ActorHost.create listCfg
     let host2 = ActorHost.create intCfg
 
-    let worker (actorHost : IActorHost<ActorMessage<'State, Command>>) = 
+    let worker (actorHost : IActorHost<'State, Command>) = 
         async {
             let actorID = ActorID "game1"
 
@@ -79,5 +79,11 @@ let main argv =
 
     host1 |> worker |> Async.RunSynchronously
     host2 |> worker |> Async.RunSynchronously
+
+    host1.GetState () |> Async.RunSynchronously |> printfn "%A"
+    host2.GetState () |> Async.RunSynchronously |> printfn "%A"
+
+
+    Console.ReadKey () |> ignore
 
     0
