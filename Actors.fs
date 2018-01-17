@@ -21,7 +21,7 @@ module Actors =
         TimeOutInMills : int option
     }
 
-    type Agent<'T> private (actorID : ActorID, processor : MailboxProcessor<'T>, cts : CancellationTokenSource) =
+    type Agent<'T> private (actorID : ActorID, agent : MailboxProcessor<'T>, cts : CancellationTokenSource) =
         static member Start actorID job =
             let cts = new CancellationTokenSource ()
             let proc = new MailboxProcessor<'T> (job, cts.Token)
@@ -30,13 +30,13 @@ module Actors =
                 proc.Start ()
             new Agent<'T>(actorID, proc, cts)
 
-        member __.Ask (buildMessage, ?timeout) = processor.PostAndAsyncReply (buildMessage, ?timeout=timeout)
-        member __.TryAsk (buildMessage, ?timeout) = processor.PostAndTryAsyncReply (buildMessage, ?timeout=timeout)
-        member __.Post message = processor.Post message
+        member __.Ask (buildMessage, ?timeout) = agent.PostAndAsyncReply (buildMessage, ?timeout=timeout)
+        member __.TryAsk (buildMessage, ?timeout) = agent.PostAndTryAsyncReply (buildMessage, ?timeout=timeout)
+        member __.Post message = agent.Post message
         member __.ID = actorID
         interface IDisposable with
             member __.Dispose () =
-                (processor :> IDisposable).Dispose ()
+                (agent :> IDisposable).Dispose ()
                 cts.Cancel ()
 
 
