@@ -1,6 +1,7 @@
 ﻿open System
 open FSharp.Actors
 open FSharp.Actors.ActorHost
+open System.Threading
 
 
 type GameStateForList = string list
@@ -44,7 +45,7 @@ let listCfg = {
 let intCfg = {
     Store = intStore
     Reducer = intReducer
-    TimeOutInMills = Some 2_00
+    TimeOutInMills = Some 2_000
 }
 
 
@@ -52,6 +53,17 @@ let intCfg = {
 let main argv =
 
     printfn "Hello World from F#!"
+
+    let reporterCts = new CancellationTokenSource()
+    let rec reporter = async {
+        do! ActorHost.metrics.ReportRunner.RunAllAsync ()
+            |> Seq.map Async.AwaitTask
+            |> Async.Parallel
+            |> Async.Ignore
+        do! Async.Sleep 1000
+        return! reporter
+    }
+    Async.Start (reporter, reporterCts.Token)
 
     let timeOutInMills = 2_000
 
@@ -68,6 +80,8 @@ let main argv =
             let! rsp2 = actor.Ask (fun ch -> Increase, ch)
             System.Console.WriteLine ("2> {0}", rsp2)
 
+            
+
             do! Async.Sleep 3_000
             
             use! actor = actorHost.GetActor actorID
@@ -83,6 +97,8 @@ let main argv =
     host1.GetState () |> Async.RunSynchronously |> printfn "%A"
     host2.GetState () |> Async.RunSynchronously |> printfn "%A"
 
+    Console.ReadKey () |> ignore
+    reporterCts.Cancel ()
 
     Console.ReadKey () |> ignore
 

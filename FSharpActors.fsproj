@@ -11,6 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="App.Metrics" Version="2.0.0-alpha" />
+    <PackageReference Include="App.Metrics.Reporting.Console" Version="2.0.0-alpha" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
   </ItemGroup>
 

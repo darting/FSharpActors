@@ -5,6 +5,9 @@ module Actors =
 
     open System
     open System.Threading
+    open App.Metrics
+    open App.Metrics.Counter
+    open App.Metrics.Meter
 
     type ActorID = ActorID of string
 
@@ -57,6 +60,19 @@ module Actors =
             abstract RemoveActor : ActorID -> unit
             abstract GetState : unit -> Async<ActorHostState<'State, 'Action>>
 
+        let metrics = MetricsBuilder().Report.ToConsole().Build()
+
+        let actorsCounter = CounterOptions()
+        actorsCounter.Name <- "actorsCounter"
+
+        let errorCounter = CounterOptions()
+        errorCounter.Name <- "errorCounter"
+
+        let reducerMeter = MeterOptions()
+        reducerMeter.Name <- "reducerMeter"
+        reducerMeter.MeasurementUnit <- Unit.Commands
+
+
         let private workerCreator<'State, 'Action>
                 (configuration : ActorConfiguration<'State, 'Action>)
                 (actorHost : MailboxProcessor<ActorHostMessage<'State, 'Action>>)
@@ -72,12 +88,14 @@ module Actors =
                                         try
                                             let! action, channel = inbox.Receive timeOutInMills
                                             let newState = reducer previousState action
+                                            metrics.Measure.Meter.Mark reducerMeter
                                             channel.Reply newState
                                             return! loop newState
                                         with
                                         // | :? TimeoutException -> 
                                         //     actorHost.RemoveActor actorID
                                         | ex -> 
+                                            metrics.Measure.Counter.Increment errorCounter
                                             try do! store.Write previousState
                                             with _ -> ()
                                             actorHost.Post (Remove actorID)
@@ -99,6 +117,7 @@ module Actors =
                                                 match Map.tryFind actorID state with
                                                 | Some actor -> state, actor
                                                 | None -> 
+                                                    metrics.Measure.Counter.Increment actorsCounter
                                                     let actor = workerCreator actorConfiguration inbox (ActorID actorID)
                                                     Map.add actorID actor state, actor
                                             replyChannel.Reply actor
@@ -107,6 +126,7 @@ module Actors =
                                             match Map.tryFind actorID state with
                                             | Some actor -> (actor :> IDisposable).Dispose()
                                             | None -> ()
+                                            metrics.Measure.Counter.Decrement actorsCounter
                                             Map.remove actorID state
                                         | GetState replyChannel ->
                                             replyChannel.Reply state
