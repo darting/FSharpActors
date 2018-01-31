@@ -23,20 +23,21 @@ module ActorHost =
         |> Meter.withName "Actor Requests"
 
 
-    let private actorResolver (metrics : IMetricsRoot)
+    let private actorResolver (runtime: ActorHostRuntime<'T>)
                       (actorCreator : ActorID -> Async<IActor<'T>>)
                       (state : ActorHostState<'T>)
                       (ActorID key as actorID)
                       (replyChannel : AsyncReplyChannel<IActor<'T>>) =
         async {
-            metrics.Measure.Meter.Mark actorRequestsMeter
+            runtime.Metrics.Measure.Meter.Mark actorRequestsMeter
             let! newState, actor = 
                 match Map.tryFind key state.Actors with
                 | Some actor -> async.Return (state, actor)
                 | None ->
-                    metrics.Measure.Counter.Increment totalActorsCounter
+                    runtime.Metrics.Measure.Counter.Increment totalActorsCounter
                     async {
                         let! actor = actorCreator actorID
+                        actor.Tell ()
                         let actors = Map.add key actor state.Actors
                         return { state with Actors = actors }, actor
                     }
@@ -44,13 +45,16 @@ module ActorHost =
             return newState
         }
 
-    let private handle<'T> (metrics : IMetricsRoot) (hostAgent : ActorHostAgent<'T>) (actorCreator : ActorCreator<'T>) (state : ActorHostState<'T>) message = 
+    let private handle<'T> (runtime: ActorHostRuntime<'T>) (hostAgent : ActorHostAgent<'T>) (actorCreator : ActorCreator<'T>) (state : ActorHostState<'T>) message = 
         match message with
-        | Get (actorID, replyChannel) -> actorResolver metrics (actorCreator hostAgent) state actorID replyChannel
-        | Remove (ActorID actorID) ->
-            metrics.Measure.Counter.Decrement totalActorsCounter
+        | Get (actorID, replyChannel) -> 
+            actorResolver runtime (actorCreator hostAgent) state actorID replyChannel
+        | Remove (ActorID actorID, reason) ->
+            runtime.Metrics.Measure.Counter.Decrement totalActorsCounter
             match Map.tryFind actorID state.Actors with
-            | Some actor -> (actor :> IDisposable).Dispose()
+            | Some actor -> 
+                try (actor :> IDisposable).Dispose()
+                with _ -> ()
             | None -> ()
             async.Return { state with Actors = Map.remove actorID state.Actors }
         | GetState replyChannel ->
@@ -58,20 +62,19 @@ module ActorHost =
             async.Return state
           
             
-    let create<'T> (metrics : IMetricsRoot) (actorCreator : ActorCreator<'T>) =
+    let create<'T> (runtime: ActorHostRuntime<'T>) (actorCreator : ActorCreator<'T>) =
 
-        metrics.Measure.Counter.Increment totalActorHostCounter
+        runtime.Metrics.Measure.Counter.Increment totalActorHostCounter
 
-        let actorHost = MailboxProcessor<ActorHostMessage<'T>>.Start(fun inbox ->
-            let rec loop (previousState : ActorHostState<'T>) = async {
+        let actorHostAgent = ActorHostAgent<'T>.Start(fun inbox ->
+            let rec loop (currentState : ActorHostState<'T>) = async {
                 let! message = inbox.Receive ()
-                let! newState = handle metrics inbox actorCreator previousState message
+                let! newState = handle runtime inbox actorCreator currentState message
                 return! loop newState
             }
             loop ActorHostState<'T>.Zero)
         
         { new IActorHost<'T> with
-            member __.GetActor actorID = actorHost.PostAndAsyncReply (fun ch -> Get (actorID, ch))
-            member __.RemoveActor actorID = actorHost.Post (Remove actorID)
-            member __.GetState () = actorHost.PostAndAsyncReply GetState }
+            member __.GetActor actorID = actorHostAgent.PostAndAsyncReply (fun ch -> Get (actorID, ch))
+            member __.GetState () = actorHostAgent.PostAndAsyncReply GetState }
 
