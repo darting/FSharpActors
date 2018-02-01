@@ -37,7 +37,6 @@ module ActorHost =
                     runtime.Metrics.Measure.Counter.Increment totalActorsCounter
                     async {
                         let! actor = actorCreator actorID
-                        actor.Tell ()
                         let actors = Map.add key actor state.Actors
                         return { state with Actors = actors }, actor
                     }

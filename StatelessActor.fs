@@ -8,6 +8,8 @@ module StatelessActor =
 
     type Handler<'Command, 'Event> = 'Command -> Async<'Event>
 
+    type ActorMessage<'Command, 'Event> = 'Command * AsyncReplyChannel<'Event> option
+
     type Configuration<'Command, 'Event> = {
         Handler : Handler<'Command, 'Event>
         TimeOutInMills : int
@@ -15,14 +17,14 @@ module StatelessActor =
 
     let creator<'Command, 'Event> 
         (configuration : Configuration<'Command, 'Event>)
-        (hostAgent : ActorHostAgent<'Command * AsyncReplyChannel<'Event> option>) 
+        (hostAgent : ActorHostAgent<ActorMessage<'Command, 'Event>>) 
         (actorID : ActorID) =
         async {
             let handler = configuration.Handler
-            let agent = AutoCancelActor<'Command * AsyncReplyChannel<'Event> option>.Start actorID 
+            let agent = AutoCancelActor<ActorMessage<'Command, 'Event>>.Start actorID 
                             (fun inbox -> 
-                                let rec shuttingDown () = async {
-                                    hostAgent.Post (Remove actorID)
+                                let rec shuttingDown reason = async {
+                                    hostAgent.Post (Remove (actorID, reason))
                                 }
                                 let rec running () = async {
                                     try
@@ -32,8 +34,8 @@ module StatelessActor =
                                         return! running ()
                                     with
                                     | ex -> 
-                                        return! shuttingDown ()
+                                        return! shuttingDown (Error ex)
                                 }
                                 running ())
-            return agent :> IActor<'Command * AsyncReplyChannel<'Event> option>
+            return agent :> IActor<ActorMessage<'Command, 'Event>>
         }

@@ -13,6 +13,9 @@
     <Compile Include="AutoCancelActor.fs" />
     <Compile Include="StatefulActor.fs" />
     <Compile Include="StatelessActor.fs" />
+
+    <Compile Include="Greeter.fs" />
+
     <Compile Include="Program.fs" />
   </ItemGroup>
 

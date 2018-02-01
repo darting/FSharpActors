@@ -10,7 +10,7 @@ module Metrics =
     open App.Metrics.Apdex
 
     let private withContext (options : MetricValueOptionsBase) =
-        options.Context <- "Tigers"
+        options.Context <- "FSharpActors"
         options
         
     let private withName name (options : MetricValueOptionsBase) =
