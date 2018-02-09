@@ -1,10 +1,5 @@
 ﻿open System
-open FSharpActors
-open FSharpActors.ActorHost
-open System.Threading
-open App.Metrics
-
-
+open Metrics
 
 
 [<EntryPoint>]
@@ -12,13 +7,8 @@ let main argv =
 
     printfn "Hello World from F#!"
 
-   
-    let globalMetrics = MetricsBuilder()
-                          .Report.ToConsole()
-                          .Build()
+    Metric.Config.WithHttpEndpoint("http://localhost:1234/") |> ignore
 
-
-   
 
     Console.ReadKey () |> ignore
 

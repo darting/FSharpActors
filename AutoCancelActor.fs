@@ -16,7 +16,7 @@ module AutoCancelActor =
 
         interface IActor<'T> with
             member __.ID = actorID
-            member __.Ask (buildMessage, ?timeout) = agent.PostAndAsyncReply (buildMessage, ?timeout=timeout)
+            member __.Ask (buildMessage, ?timeout) = agent.PostAndTryAsyncReply (buildMessage, ?timeout=timeout)
             member __.Tell message = agent.Post message
             member __.Dispose () =
                 (agent :> IDisposable).Dispose ()

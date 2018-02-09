@@ -11,7 +11,7 @@ type Agent<'T> = MailboxProcessor<'T>
 type IActor<'Message> =
     inherit IDisposable
     abstract ID : ActorID
-    abstract Ask : (AsyncReplyChannel<'Reply> -> 'Message) * ?timeout:int -> Async<'Reply>
+    abstract Ask : (AsyncReplyChannel<'Reply> -> 'Message) * ?timeout:int -> Async<'Reply option>
     abstract Tell : 'Message -> unit
 
 type ActorHostState<'ActorMessage> = {

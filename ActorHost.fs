@@ -4,23 +4,14 @@ namespace FSharpActors
 module ActorHost =
 
     open System
-    open App.Metrics
-    open FSharpActors.Types
     open Metrics
+    open FSharpActors.Types
 
-    let private totalActorHostCounter = 
-        Counter.create()
-        |> Counter.withName "Total Active ActorHost"
-        |> Counter.withUnit Unit.Items
+    let private totalActorHostCounter = Metric.Counter("TotalActiveActorHost", Unit.Items)
 
-    let private totalActorsCounter = 
-        Counter.create()
-        |> Counter.withName "Total Active Actors"
-        |> Counter.withUnit Unit.Items
+    let private totalActorsCounter = Metric.Counter("TotalActiveActors", Unit.Items)
             
-    let private actorRequestsMeter = 
-        Meter.create()
-        |> Meter.withName "Actor Requests"
+    let private actorRequestsMeter = Metric.Meter ("ActorRequests", Unit.Requests)
 
 
     let private actorResolver (runtime: ActorHostRuntime<'T>)
@@ -29,12 +20,12 @@ module ActorHost =
                       (ActorID key as actorID)
                       (replyChannel : AsyncReplyChannel<IActor<'T>>) =
         async {
-            runtime.Metrics.Measure.Meter.Mark actorRequestsMeter
+            actorRequestsMeter.Mark()
             let! newState, actor = 
                 match Map.tryFind key state.Actors with
                 | Some actor -> async.Return (state, actor)
                 | None ->
-                    runtime.Metrics.Measure.Counter.Increment totalActorsCounter
+                    totalActorsCounter.Increment()
                     async {
                         let! actor = actorCreator actorID
                         let actors = Map.add key actor state.Actors
@@ -49,7 +40,7 @@ module ActorHost =
         | Get (actorID, replyChannel) -> 
             actorResolver runtime (actorCreator hostAgent) state actorID replyChannel
         | Remove (ActorID actorID, reason) ->
-            runtime.Metrics.Measure.Counter.Decrement totalActorsCounter
+            totalActorsCounter.Decrement()
             match Map.tryFind actorID state.Actors with
             | Some actor -> 
                 try (actor :> IDisposable).Dispose()
@@ -63,7 +54,7 @@ module ActorHost =
             
     let create<'T> (runtime: ActorHostRuntime<'T>) (actorCreator : ActorCreator<'T>) =
 
-        runtime.Metrics.Measure.Counter.Increment totalActorHostCounter
+        totalActorHostCounter.Increment()
 
         let actorHostAgent = ActorHostAgent<'T>.Start(fun inbox ->
             let rec loop (currentState : ActorHostState<'T>) = async {

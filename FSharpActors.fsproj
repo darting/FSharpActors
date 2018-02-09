@@ -8,11 +8,8 @@
   <ItemGroup>
     <Compile Include="Pervasive.fs" />
     <Compile Include="Types.fs" />
-    <Compile Include="Metrics.fs" />
     <Compile Include="ActorHost.fs" />
     <Compile Include="AutoCancelActor.fs" />
-    <Compile Include="StatefulActor.fs" />
-    <Compile Include="StatelessActor.fs" />
 
     <Compile Include="Greeter.fs" />
 
@@ -22,7 +19,10 @@
   <ItemGroup>
     <PackageReference Include="App.Metrics" Version="2.0.0-alpha" />
     <PackageReference Include="App.Metrics.Reporting.Console" Version="2.0.0-alpha" />
+    <PackageReference Include="Kafunk" Version="0.1.14-alpha01" />
+    <PackageReference Include="Metrics.NET" Version="0.5.3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0-preview1-25914-04" />
   </ItemGroup>
 
 </Project>
