@@ -2,15 +2,19 @@ module FSharpActors.Types
 
 open System
 
+type Job<'Message> = MailboxProcessor<'Message> -> Async<unit>
+
 type ActorID = int32
 
-type IActor = 
+type IActor<'T> = 
     inherit IDisposable
+    abstract ID : ActorID
+    abstract Ask : (AsyncReplyChannel<'Reply> -> 'T) * ?timeout:int -> Async<'Reply option>
+    abstract Tell : 'T -> unit
     
-type IActorProxy = 
-    abstract ActorID : ActorID
+type IActorProxy<'T> = interface end
 
 type IActorRuntime =
-    abstract Spawn : ActorID -> IActor
+    abstract Spawn<'T> : ActorID -> Job<'T> -> Async<IActor<'T>>
 
 
