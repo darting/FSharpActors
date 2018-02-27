@@ -15,6 +15,7 @@ type IActor<'T> =
 type IActorProxy<'T> = interface end
 
 type IActorHost =
+    inherit IDisposable
     abstract Spawn<'T> : ActorID -> Job<'T> -> Async<IActor<'T>>
 
 

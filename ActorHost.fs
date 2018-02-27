@@ -41,7 +41,10 @@ type ActorHost private () =
                     return actor
             }
         
+        member __.Dispose () =
+            registry.Values |> Seq.iter (fun x -> (x :?> IDisposable).Dispose())
+        
     static member Start () =
-        ActorHost() :> IActorHost
+        new ActorHost () :> IActorHost
 
 
