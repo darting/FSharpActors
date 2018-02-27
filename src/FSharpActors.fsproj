@@ -9,6 +9,7 @@
     <Compile Include="Prelude.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="ActorHost.fs" />
+    <Compile Include="Remoting.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -17,6 +18,10 @@
     <PackageReference Include="Metrics.NET" Version="0.5.5" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0-preview1-25914-04" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\generated\actor\actor.csproj" />
   </ItemGroup>
 
 </Project>

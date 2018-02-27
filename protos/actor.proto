@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package FSharpActors;
+option csharp_namespace = "FSharpActors.Remoting";
+
+message ActorPID {
+    string Address = 1;
+    string ID = 2;
+}
+
+message MessageEnvelope {
+    string Kind = 1;
+    bytes Payload = 2;
+    ActorPID Target = 3;
+    ActorPID Sender = 4;
+}
+
+message MessageBatch {
+    repeated MessageEnvelope envelopes = 1;
+}
+
+message Unit {}
+
+service ActorRuntime {
+  rpc Receive (stream MessageBatch) returns (stream Unit) {}
+}
