@@ -14,7 +14,7 @@ type IActor<'T> =
     
 type IActorProxy<'T> = interface end
 
-type IActorRuntime =
+type IActorHost =
     abstract Spawn<'T> : ActorID -> Job<'T> -> Async<IActor<'T>>
 
 

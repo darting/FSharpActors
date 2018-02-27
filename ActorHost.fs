@@ -1,4 +1,4 @@
-module FSharpActors.ActorRuntime
+module FSharpActors.ActorHost
 
 open System
 open System.Threading
@@ -24,11 +24,11 @@ type Actor<'T> private (actorID : ActorID, mailbox : MailboxProcessor<'T>, cts :
             (mailbox :> IDisposable).Dispose ()
             cts.Cancel ()
 
-type ActorRuntime () =
+type ActorHost () =
 
     let registry = new ConcurrentDictionary<ActorID, obj>()
 
-    interface IActorRuntime with
+    interface IActorHost with
         member __.Spawn (actorID : ActorID) (job : Job<'T>) = 
             async {
                 match registry.TryGetValue actorID with
