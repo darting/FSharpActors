@@ -24,7 +24,8 @@ type Actor<'T> private (actorID : ActorID, mailbox : MailboxProcessor<'T>, cts :
             (mailbox :> IDisposable).Dispose ()
             cts.Cancel ()
 
-type ActorHost () =
+
+type ActorHost private () =
 
     let registry = new ConcurrentDictionary<ActorID, obj>()
 
@@ -40,5 +41,7 @@ type ActorHost () =
                     return actor
             }
         
+    static member Start () =
+        ActorHost() :> IActorHost
 
 
