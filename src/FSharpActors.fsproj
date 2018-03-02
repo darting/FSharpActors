@@ -15,9 +15,10 @@
 
   <ItemGroup>
     <PackageReference Include="Consul" Version="0.7.2.4" />
-    <PackageReference Include="Metrics.NET" Version="0.5.5" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0-preview1-25914-04" />
+    <PackageReference Update="FSharp.Core" Version="4.3.4" />
+    <PackageReference Include="TaskBuilder.fs" Version="1.1.1" />
   </ItemGroup>
   
   <ItemGroup>
