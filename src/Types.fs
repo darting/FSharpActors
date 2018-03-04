@@ -4,7 +4,7 @@ open System
 
 type Job<'Message> = MailboxProcessor<'Message> -> Async<unit>
 
-type ActorID = int32
+type ActorID = string
 
 type IActor<'T> = 
     inherit IDisposable
@@ -17,5 +17,7 @@ type IActorProxy<'T> = interface end
 type IActorHost =
     inherit IDisposable
     abstract Spawn<'T> : ActorID -> Job<'T> -> Async<IActor<'T>>
+    abstract Register<'T> : ActorID -> Job<'T> -> unit
+    abstract Resolve : ActorID -> Async<IActor<'T> option>
 
 

@@ -41,6 +41,19 @@ type ActorHost private () =
                     return actor
             }
         
+        member __.Register (actorID : ActorID) (job : Job<'T>) = 
+            if not (registry.ContainsKey actorID) then
+                let actor = Actor<'T>.Start actorID job
+                if not (registry.TryAdd (actorID, actor)) then
+                    actor.Dispose()
+        
+        member __.Resolve (actorID : ActorID) =
+            async {
+                return match registry.TryGetValue actorID with
+                       | true, x -> x :?> IActor<'T> |> Some
+                       | false, _ -> None
+            }
+
         member __.Dispose () =
             registry.Values |> Seq.iter (fun x -> (x :?> IDisposable).Dispose())
         

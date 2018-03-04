@@ -23,7 +23,9 @@ let main _ =
 
     use actorHost = ActorHost.Start ()
 
-    let actor = actorHost.Spawn 1 (fun inbox -> 
+    let actorID = "actor"
+
+    let actor = actorHost.Spawn actorID (fun inbox -> 
                     let rec loop () = async {
                         let! msg = inbox.Receive()
                         match msg with 
@@ -36,11 +38,16 @@ let main _ =
                     loop ()) 
                     |> Async.RunSynchronously
 
-    actor.Tell Ping
-    actor.Tell Connect
-    actor.Tell Ping
-    actor.Tell Ping
+    // actor.Tell Ping
+    // actor.Tell Connect
+    // actor.Tell Ping
+    // actor.Tell Ping
 
+    let server = Remoting.start actorHost
+
+    printfn "press any key to terminate"
     Console.Read () |> ignore
+
+    server.ShutdownAsync().Wait()
     
     0

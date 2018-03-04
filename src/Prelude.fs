@@ -2,7 +2,20 @@
 module FSharpActors.Prelude
 
 open System.Diagnostics
+open System.Threading.Tasks
 
+
+module Async =
+    // https://gist.github.com/theburningmonk/3921623
+    let inline AwaitPlainTask (task: Task) = 
+        // rethrow exception from preceding task if it fauled
+        let continuation (t : Task) : unit =
+            match t.IsFaulted with
+            | true -> raise t.Exception
+            | _ -> ()
+        task.ContinueWith continuation |> Async.AwaitTask
+        
+    let inline StartAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
 
 [<Sealed>]
 type MaybeBuilder () =
